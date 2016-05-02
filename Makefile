@@ -15,4 +15,4 @@ all:
 
 .PHONY: check
 check:
-	gosh scheme_test.scm
+	GUILE_LOAD_PATH="$(CURDIR)":"$${GUILE_LOAD_PATH:-}" GUILE_AUTO_COMPILE=0 guile my-scheme-lib-test.scm
