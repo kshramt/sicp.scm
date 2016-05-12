@@ -221,21 +221,28 @@
                      (expand-clauses rest))))))
 
 
-(define (my-eval-4-2 exp env)
-  "Q 4.2"
+(define (my-eval-4-2-b exp env)
+  "Q 4.2 b"
+  (define (application? exp)
+    (tagged-list? exp 'call))
+
+  (define operator cadr)
+
+  (define operands cddr)
+
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
-        ((definition? exp) (eval-definition exp env))
+        ((application? exp) (my-apply (my-eval (operator exp) env)
+                                      (list-of-values (operands exp) env)))
         ((assignment? exp) (eval-assignment exp env))
+        ((definition? exp) (eval-definition exp env))
         ((if? exp) (eval-if exp env))
         ((lambda? exp) (make-procedure (lambda-parameters exp)
                                        (lambda-body exp)
                                        env))
         ((begin? exp) (eval-sequence (begin-actions exp) env))
         ((cond? exp) (my-eval (cond->if exp) env))
-        ((application? exp) (my-apply (my-eval (operator exp) env)
-                                      (list-of-values (operands exp) env)))
         (else (error "Unknown expression type -- EVAL" exp))))
 
 
