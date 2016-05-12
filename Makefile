@@ -18,5 +18,5 @@ check: my-scheme.scm.tested
 
 
 %.scm.tested: %.scm
-	GUILE_LOAD_PATH="$(CURDIR)":"$${GUILE_LOAD_PATH:-}" GUILE_AUTO_COMPILE=0 guile $<
+	GUILE_LOAD_PATH="$(CURDIR)":"$${GUILE_LOAD_PATH:-}" guile $<
 	touch $@
