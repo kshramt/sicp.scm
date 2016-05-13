@@ -246,6 +246,43 @@
         (else (error "Unknown expression type -- EVAL" exp))))
 
 
+(define (make-table)
+  (let ((table '()))
+    (define (lookup key tbl)
+      (if (pair? tbl)
+          (let ((p (car tbl)))
+            (if (eq? key (car p))
+                p
+                (lookup key (cdr tbl))))
+          '()))
+    (define (dispatch m)
+      (cond
+       ((eq? m 'lookup) (lambda (key) (lookup key table)))
+       ((eq? m 'insert!) (lambda (key val) (set! table (cons (cons key val) table))))
+       (else (error "Unknown dispatch type -- make-table/dispatch:" m))))
+    dispatch))
+
+(define (lookup- key table)
+  ((table 'lookup) key))
+
+(define (lookup key table)
+  (let ((ret (lookup- key table)))
+    (if (pair? ret)
+        (cdr ret)
+        (error "KeyError -- lookup" key))))
+
+(define (insert! key val table)
+  ((table 'insert!) key val))
+
+(let ((tbl (make-table))) ; test
+  (insert! 'a 1 tbl)
+  (insert! 'b 2 tbl)
+  (assert (eq? (lookup- 'not tbl) '()))
+  (assert (eq? (lookup 'b tbl) 2))
+  (assert (eq? (lookup 'a tbl) 1))
+  )
+
+
 (define (main)
   #t
   )
