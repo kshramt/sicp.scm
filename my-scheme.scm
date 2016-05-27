@@ -233,7 +233,7 @@
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
-        ((application? exp) (my-apply (my-eval (operator exp) env)
+        ((application? exp) (my-apply (my-eval-4-2-b (operator exp) env)
                                       (list-of-values (operands exp) env)))
         ((assignment? exp) (eval-assignment exp env))
         ((definition? exp) (eval-definition exp env))
@@ -242,7 +242,7 @@
                                        (lambda-body exp)
                                        env))
         ((begin? exp) (eval-sequence (begin-actions exp) env))
-        ((cond? exp) (my-eval (cond->if exp) env))
+        ((cond? exp) (my-eval-4-2-b (cond->if exp) env))
         (else (error "Unknown expression type -- EVAL" exp))))
 
 
@@ -251,7 +251,7 @@
     (define (lookup key tbl)
       (if (pair? tbl)
           (let ((p (car tbl)))
-            (if (eq? key (car p))
+            (if (equal? key (car p))
                 p
                 (lookup key (cdr tbl))))
           '()))
