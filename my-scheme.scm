@@ -39,6 +39,17 @@
           "Unknown procedure type -- APPLY" procedure))))
 
 
+(define true #t)
+
+(define false #f)
+
+(define (true? x)
+  (not (false? x)))
+
+(define (false? x)
+  (eq? x false))
+
+
 (define (list-of-values exps env)
   (if (no-operands? exps)
       '()
@@ -267,19 +278,110 @@
 
 (define (lookup key table)
   (let ((ret (lookup- key table)))
-    (if (pair? ret)
+    (if (has-val? ret)
         (cdr ret)
         (error "KeyError -- lookup" key))))
 
 (define (insert! key val table)
   ((table 'insert!) key val))
 
-(let ((tbl (make-table))) ; test
-  (insert! 'a 1 tbl)
-  (insert! 'b 2 tbl)
-  (assert (eq? (lookup- 'not tbl) '()))
-  (assert (eq? (lookup 'b tbl) 2))
-  (assert (eq? (lookup 'a tbl) 1))
+(define has-val? pair?)
+
+(define val-kv cdr)
+
+
+(define *method-table* (make-table))
+
+(define (put f ts impl)
+  (insert! (cons f ts) impl *method-table*))
+
+(define (get f ts)
+  (lookup- (cons f ts) *method-table*))
+
+(define type-tag car)
+(define contents cdr)
+
+
+(define (apply-generic f . args)
+  (let* ((ts (map type-tag args))
+         (impl (get op ts)))
+    (if (pair? impl)
+        (apply impl (map contents args))
+        (error "No implementation of " f " for type " ts))))
+
+
+(define (my-eval-4-3 exp env)
+  "Q 4.3"
+  (define (list-of-values exps env)
+    (if (no-operands? exps)
+        '()
+        (cons (my-eval-4-3 (first-operand exps) env)
+              (list-of-values (rest-operands exps) env))))
+  (cond ((self-evaluating? exp) exp)
+        ((variable? exp) (lookup-variable-value exp env))
+        ((pair? exp) (let* ((op (operator exp))
+                            (impl (get 'eval op)))
+                       (if (has-val? impl)
+                           ((val-kv impl) exp env)
+                           (my-apply (my-eval-4-3 op env)
+                                     (list-of-values (operands exp) env)))))
+        (else (error "Unknown expression type -- EVAL" exp))))
+
+
+(define (install-eval-4-3)
+  (define (eval-assignment exp env)
+    (set-variable-value! (assignment-variable exp)
+                         (my-eval-4-3 (assignment-value exp) env)
+                         env)
+    'ok)
+  (define (eval-definition exp env)
+    (define-variable! (definition-variable exp)
+      (my-eval-4-3 (definition-value exp) env)
+      env)
+    'ok)
+  (define (eval-sequence exps env)
+    (cond ((last-exp? exps) (my-eval (first-exp exps) env))
+          (else (my-eval-4-3 (first-exp exps) env)
+                (eval-sequence (rest-exps exps) env))))
+  (define (text-of-quotation exp env)
+    (cadr exp))
+  (define (eval-if exp env)
+    (if (true? (my-eval-4-3 (if-predicate exp) env))
+        (my-eval-4-3 (if-consequent exp) env)
+        (my-eval-4-3 (if-alternative exp) env)))
+
+
+  (define (add f impl)
+    (put 'eval f impl))
+  (add 'quote text-of-quotation)
+  (add 'set! eval-assignment)
+  (add 'define eval-definition)
+  (add 'if eval-if)
+  (add 'lambda (lambda (exp env)
+                 (make-procedure (lambda-parameters exp)
+                                 (lambda-body exp)
+                                 env)))
+  (add 'begin (lambda (exp env)
+                (eval-sequence (begin-actions exp) env)))
+  (add 'cond (lambda (exp env)
+               (my-eval-4-3 (cond->if exp) env)))
+  )
+
+(install-eval-4-3)
+
+
+(define (test)
+  (let ((tbl (make-table)))
+    (insert! 'a 1 tbl)
+    (insert! 'b 2 tbl)
+    (assert (eq? (lookup- 'not tbl) '()))
+    (assert (eq? (lookup 'b tbl) 2))
+    (assert (eq? (lookup 'a tbl) 1))
+    )
+  (let ()
+    (assert (equal? (my-eval-4-3 1 '()) 1))
+    (assert (equal? (my-eval-4-3 '(quote QUOTE) '()) 'QUOTE))
+    )
   )
 
 
@@ -288,4 +390,4 @@
   )
 
 
-(main)
+(test)
