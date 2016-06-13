@@ -1,3 +1,6 @@
+(define-module (my-scheme))
+
+
 (define-syntax assert
   (syntax-rules ()
     ((_ ex)
@@ -5,6 +8,26 @@
        (if v
            v
            (error "ASSERTION FAILURE: " 'ex))))))
+
+
+(define (zip2 xs ys)
+  (reverse (zip2-rev xs ys)))
+
+(define (zip2-rev xs ys)
+  (let loop ((xs xs)
+             (ys ys)
+             (ret '()))
+    (if (and (pair? xs)
+             (pair? ys))
+        (loop (cdr xs)
+              (cdr ys)
+              (cons (list (car xs)
+                          (car ys))
+                    ret))
+        ret)))
+
+
+(define (comp2 f g) (lambda (x) (g (f x))))
 
 
 (define (my-eval exp env)
@@ -349,10 +372,9 @@
     (if (true? (my-eval-4-3 (if-predicate exp) env))
         (my-eval-4-3 (if-consequent exp) env)
         (my-eval-4-3 (if-alternative exp) env)))
-
-
   (define (add f impl)
     (put 'eval f impl))
+
   (add 'quote text-of-quotation)
   (add 'set! eval-assignment)
   (add 'define eval-definition)
@@ -382,8 +404,12 @@
     (assert (equal? (my-eval-4-3 1 '()) 1))
     (assert (equal? (my-eval-4-3 '(quote QUOTE) '()) 'QUOTE))
     )
+  (let ()
+    (assert (equal? (zip2 '(1 2 3) '(a b c d))
+                    '((1 a)
+                      (2 b)
+                      (3 c)))))
   )
-
 
 (define (main)
   #t
