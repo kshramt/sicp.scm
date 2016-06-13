@@ -42,6 +42,7 @@
                                        env))
         ((begin? exp) (eval-sequence (begin-actions exp) env))
         ((cond? exp) (my-eval (cond->if exp) env))
+        ((let? exp) (my-eval (let->combination exp) env))
         ((application? exp) (my-apply (my-eval (operator exp) env)
                                       (list-of-values (operands exp) env)))
         (else (error "Unknown expression type -- EVAL" exp))))
@@ -253,6 +254,19 @@
             (make-if (cond-predicate first)
                      (sequence->exp (cond-actions first))
                      (expand-clauses rest))))))
+
+
+(define (let? exp)
+  (tagged-list? exp 'let))
+
+(define (let->combination exp)
+  "Q 4.6"
+  (let* ((kvs (cadr exp))
+         (ks (map car kvs))
+         (vs (map cadr kvs))
+         (body (cddr exp)))
+    (list (make-lambda ks body)
+          vs)))
 
 
 (define (my-eval-4-2-b exp env)
