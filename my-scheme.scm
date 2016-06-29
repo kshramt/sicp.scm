@@ -33,6 +33,10 @@
 (define number->symbol (comp2 string->symbol number->string))
 
 
+(define (sym-n n)
+  (string->symbol (string-append "sym" (number->string n))))
+
+
 (define (my-eval exp env)
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
@@ -339,7 +343,7 @@
                     ret
                     (loop (cdr bodies)
                           (1+ i)
-                          (cons (list (number->symbol i)
+                          (cons (list (sym-n i)
                                       (make-lambda '() (list (car bodies))))
                                 ret)))))
          (ks (map car kvs)))
@@ -384,7 +388,7 @@
                     ret
                     (loop (cdr bodies)
                           (1+ i)
-                          (cons (list (number->symbol i)
+                          (cons (list (sym-n i)
                                       (make-lambda '() (list (car bodies))))
                                 ret)))))
          (ks (map car kvs)))
@@ -573,17 +577,17 @@
     (assert (equal? (expand-and-clauses '())
                     (make-let '() (list true))))
     (assert (equal? (expand-and-clauses '((a) (b) (c)))
-                    (make-let '((#{2}# (lambda () (c)))
-                                (#{1}# (lambda () (b)))
-                                (#{0}# (lambda () (a))))
+                    (make-let '((sym2 (lambda () (c)))
+                                (sym1 (lambda () (b)))
+                                (sym0 (lambda () (a))))
                               (list
-                               (make-let '((v (#{0}#)))
+                               (make-let '((v (sym0)))
                                          (list
                                           (make-if 'v
-                                                   (make-let '((v (#{1}#)))
+                                                   (make-let '((v (sym1)))
                                                              (list
                                                               (make-if 'v
-                                                                       (make-let '((v (#{2}#)))
+                                                                       (make-let '((v (sym2)))
                                                                                  (list
                                                                                   (make-if 'v
                                                                                            'v
@@ -594,19 +598,19 @@
     (assert (equal? (expand-or-clauses '())
                     (make-let '() (list false))))
     (assert (equal? (expand-or-clauses '((a) (b) (c)))
-                    (make-let '((#{2}# (lambda () (c)))
-                                 (#{1}# (lambda () (b)))
-                                 (#{0}# (lambda () (a))))
+                    (make-let '((sym2 (lambda () (c)))
+                                (sym1 (lambda () (b)))
+                                (sym0 (lambda () (a))))
                               (list
-                               (make-let '((v (#{0}#)))
+                               (make-let '((v (sym0)))
                                          (list
                                           (make-if 'v
                                                    'v
-                                                   (make-let '((v (#{1}#)))
+                                                   (make-let '((v (sym1)))
                                                              (list
                                                               (make-if 'v
                                                                        'v
-                                                                       (make-let '((v (#{2}#)))
+                                                                       (make-let '((v (sym2)))
                                                                                  (list
                                                                                   (make-if 'v
                                                                                            'v
