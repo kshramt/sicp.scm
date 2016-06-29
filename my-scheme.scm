@@ -186,8 +186,8 @@
   (cons 'lambda (cons parameters body)))
 
 
-(define (make-let kv body)
-  (cons 'let (cons kv body)))
+(define (make-let kvs body)
+  (cons 'let (cons kvs body)))
 
 
 (define (if? exp)
