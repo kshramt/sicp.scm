@@ -289,18 +289,26 @@
 (define (let? exp)
   (tagged-list? exp 'let))
 
-(define let-kv cadr)
+(define let-kvs cadr)
 
 (define let-body cddr)
 
 (define (let->combination exp)
-  "Q 4.6"
-  (let* ((kvs (let-kv exp))
-         (ks (map car kvs))
-         (vs (map cadr kvs))
-         (body (let-body exp)))
-    (list (make-lambda ks body)
-          vs)))
+  "Q 4.6 Q 4.8"
+  (if (symbol? (let-kvs exp))
+      (let ((name (cadr exp))
+            (kvs (caddr exp))
+            (body (cdddr exp)))
+        (make-let '()
+                  (list
+                   (cons 'define
+                         (cons (cons name (map car kvs))
+                               body))
+                    (cons name (map cadr kvs)))))
+      (let ((kvs (let-kvs exp))
+            (body (let-body exp)))
+        (cons (make-lambda (map car kvs) body)
+              (map cadr kvs)))))
 
 
 (define (and? exp)
@@ -399,12 +407,12 @@
 
 (define (let*->nested-lets exp)
   "Q 4.7"
-  (let loop ((kv (reverse (let-kv exp)))
+  (let loop ((kvs (reverse (let-kvs exp)))
              (ret (make-begin (let-body exp))))
-    (if (null? kv)
+    (if (null? kvs)
         ret
-        (loop (cdr kv)
-              (make-let (list (car kv)) (list ret))))))
+        (loop (cdr kvs)
+              (make-let (list (car kvs)) (list ret))))))
 
 
 (define (my-eval-4-2-b exp env)
@@ -630,6 +638,15 @@
                          (begin c
                                 d)))))
     )
+  (let ()
+    (assert (equal? (let->combination '(let () a))
+                    '((lambda () a))))
+    (assert (equal? (let->combination '(let ((a b)) a))
+                    '((lambda (a) a) b)))
+    (assert (equal? (let->combination '(let f () a))
+                    '(let () (define (f) a) (f))))
+    (assert (equal? (let->combination '(let f ((x y)) p))
+                    '(let () (define (f x) p) (f y)))))
   )
 
 (define (main)
