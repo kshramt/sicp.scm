@@ -48,6 +48,7 @@
         ((begin? exp) (eval-sequence (begin-actions exp) env))
         ((cond? exp) (my-eval (cond->if exp) env))
         ((let? exp) (my-eval (let->combination exp) env))
+        ((let*? exp) (my-eval (let*->nested-lets exp) env))
         ((application? exp) (my-apply (my-eval (operator exp) env)
                                       (list-of-values (operands exp) env)))
         (else (error "Unknown expression type -- EVAL" exp))))
@@ -288,12 +289,16 @@
 (define (let? exp)
   (tagged-list? exp 'let))
 
+(define let-kv cadr)
+
+(define let-body cddr)
+
 (define (let->combination exp)
   "Q 4.6"
-  (let* ((kvs (cadr exp))
+  (let* ((kvs (let-kv exp))
          (ks (map car kvs))
          (vs (map cadr kvs))
-         (body (cddr exp)))
+         (body (let-body exp)))
     (list (make-lambda ks body)
           vs)))
 
@@ -388,6 +393,18 @@
                                          (list (make-if 'v 'v ret)))
                                (cdr ks)))))))))
 
+
+(define (let*? exp)
+    (tagged-list? exp 'let*))
+
+(define (let*->nested-lets exp)
+  "Q 4.7"
+  (let loop ((kv (reverse (let-kv exp)))
+             (ret (make-begin (let-body exp))))
+    (if (null? kv)
+        ret
+        (loop (cdr kv)
+              (make-let (list (car kv)) (list ret))))))
 
 
 (define (my-eval-4-2-b exp env)
@@ -598,6 +615,21 @@
                            (if p
                                ((then) p)
                                (els)))))))
+
+  (let ()
+    (assert (equal? (let*->nested-lets '(let* ()
+                                          c
+                                          d))
+                    '(begin c d)))
+    (assert (equal? (let*->nested-lets '(let* ((a 1)
+                                               (b 2))
+                                          c
+                                          d))
+                    '(let ((a 1))
+                       (let ((b 2))
+                         (begin c
+                                d)))))
+    )
   )
 
 (define (main)
