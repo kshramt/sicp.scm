@@ -329,12 +329,12 @@
           (if (null? ks)
               true
               (let loop ((ret (list 'let (list (list 'v (list (car ks))))
-                                    (list 'if 'v 'v false)))
+                                    (make-if 'v 'v false)))
                          (ks (cdr ks)))
                 (if (null? ks)
                     ret
                     (loop (list 'let (list (list 'v (list (car ks))))
-                                (list 'if 'v ret false))
+                                (make-if 'v ret false))
                           (cdr ks))))))))
 
 
@@ -373,12 +373,12 @@
           (if (null? ks)
               false
               (let loop ((ret (list 'let (list (list 'v (list (car ks))))
-                                    (list 'if 'v 'v false)))
+                                    (make-if 'v 'v false)))
                          (ks (cdr ks)))
                 (if (null? ks)
                     ret
                     (loop (list 'let (list (list 'v (list (car ks))))
-                                (list 'if 'v 'v ret))
+                                (make-if 'v 'v ret))
                           (cdr ks))))))))
 
 
