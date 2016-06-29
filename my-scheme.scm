@@ -27,7 +27,10 @@
         ret)))
 
 
-(define (comp2 f g) (lambda (x) (g (f x))))
+(define (comp2 g f) (lambda (x) (g (f x))))
+
+
+(define number->symbol (comp2 string->symbol number->string))
 
 
 (define (my-eval exp env)
@@ -37,6 +40,8 @@
         ((assignment? exp) (eval-assignment exp env))
         ((definition? exp) (eval-definition exp env))
         ((if? exp) (eval-if exp env))
+        ((and? exp) (my-eval (expand-and-clauses (and-clauses exp)) env))
+        ((or? exp) (my-eval (expand-or-clauses (or-clauses exp)) env))
         ((lambda? exp) (make-procedure (lambda-parameters exp)
                                        (lambda-body exp)
                                        env))
@@ -269,6 +274,95 @@
           vs)))
 
 
+(define (and? exp)
+  (tagged-list? exp 'and))
+
+(define and-clauses cdr)
+
+(define (eval-and-special exp env)
+  "Q 4.4"
+  (let loop ((s (and-clauses exp))
+             (ret true))
+    (if (null? s)
+        ret
+        (let ((ret (my-eval (car s) env)))
+          (if (true? ret)
+              (loop (cdr s) ret)
+              false)))))
+
+(define (and->if exp)
+  (expand-and-clauses (and-clauses exp)))
+
+(define (expand-and-clauses clauses)
+  "Q 4.4"
+  (let* ((kvs (let loop ((bodies clauses)
+                         (i 0)
+                         (ret '()))
+                (if (null? bodies)
+                    ret
+                    (loop (cdr bodies)
+                          (1+ i)
+                          (cons (list (number->symbol i)
+                                      (make-lambda '() (list (car bodies))))
+                                ret)))))
+         (ks (map car kvs)))
+    (list 'let kvs
+          (if (null? ks)
+              true
+              (let loop ((ret (list 'let (list (list 'v (list (car ks))))
+                                    (list 'if 'v 'v false)))
+                         (ks (cdr ks)))
+                (if (null? ks)
+                    ret
+                    (loop (list 'let (list (list 'v (list (car ks))))
+                                (list 'if 'v ret false))
+                          (cdr ks))))))))
+
+
+(define (or? exp)
+  (tagged-list? exp 'or))
+
+(define or-clauses cdr)
+
+(define (eval-or-special exp env)
+  "Q 4.4"
+  (let loop ((s (or-clauses exp)))
+    (if (null? s)
+        false
+        (let ((ret (my-eval (car s) env)))
+          (if (true? ret)
+              ret
+              (loop (cdr s)))))))
+
+(define (or->if exp)
+  (expand-or-clauses (or-clauses exp)))
+
+(define (expand-or-clauses clauses)
+  "Q 4.4"
+  (let* ((kvs (let loop ((bodies clauses)
+                         (i 0)
+                         (ret '()))
+                (if (null? bodies)
+                    ret
+                    (loop (cdr bodies)
+                          (1+ i)
+                          (cons (list (number->symbol i)
+                                      (make-lambda '() (list (car bodies))))
+                                ret)))))
+         (ks (map car kvs)))
+    (list 'let kvs
+          (if (null? ks)
+              false
+              (let loop ((ret (list 'let (list (list 'v (list (car ks))))
+                                    (list 'if 'v 'v false)))
+                         (ks (cdr ks)))
+                (if (null? ks)
+                    ret
+                    (loop (list 'let (list (list 'v (list (car ks))))
+                                (list 'if 'v 'v ret))
+                          (cdr ks))))))))
+
+
 (define (my-eval-4-2-b exp env)
   "Q 4.2 b"
   (define (application? exp)
@@ -423,6 +517,40 @@
                     '((1 a)
                       (2 b)
                       (3 c)))))
+  (let ()
+    (assert (equal? (expand-and-clauses '())
+                    (list 'let '() true)))
+    (assert (equal? (expand-and-clauses '((a) (b) (c)))
+                    (list 'let '((#{2}# (lambda () (c)))
+                                 (#{1}# (lambda () (b)))
+                                 (#{0}# (lambda () (a))))
+                          (list 'let '((v (#{0}#)))
+                                (list 'if 'v
+                                      (list 'let '((v (#{1}#)))
+                                            (list 'if 'v
+                                                  (list 'let '((v (#{2}#)))
+                                                        (list 'if 'v
+                                                              'v
+                                                              false))
+                                                  false))
+                                      false))))))
+  (let ()
+    (assert (equal? (expand-or-clauses '())
+                    (list 'let '() false)))
+    (assert (equal? (expand-or-clauses '((a) (b) (c)))
+                    (list 'let '((#{2}# (lambda () (c)))
+                                 (#{1}# (lambda () (b)))
+                                 (#{0}# (lambda () (a))))
+                          (list 'let '((v (#{0}#)))
+                                (list 'if 'v
+                                      'v
+                                      (list 'let '((v (#{1}#)))
+                                            (list 'if 'v
+                                                  'v
+                                                  (list 'let '((v (#{2}#)))
+                                                        (list 'if 'v
+                                                              'v
+                                                              false))))))))))
   )
 
 (define (main)
