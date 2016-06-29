@@ -181,6 +181,10 @@
   (cons 'lambda (cons parameters body)))
 
 
+(define (make-let kv body)
+  (cons 'let (cons kv body)))
+
+
 (define (if? exp)
   (tagged-list? exp 'if))
 
@@ -267,14 +271,15 @@
                   (let ((action (cdr actions)))
                     (and (null? action) (error "=> clause does not contain an action -- EXPAND-CLAUSES"))
                     (and (pair? (cdr action)) (error "=> clause contains multiple actions -- EXPAND-CLAUSES"))
-                    (list 'let (list (list 'then (make-lambda '()
-                                                              action))
-                                     (list 'els (make-lambda '()
-                                                              (list (expand-clauses rest))))
-                                     (list 'p pred))
-                              (make-if 'p
-                                       '((then) p)
-                                       '(els))))
+                    (make-let (list (list 'then (make-lambda '()
+                                                             action))
+                                    (list 'els (make-lambda '()
+                                                            (list (expand-clauses rest))))
+                                    (list 'p pred))
+                              (list (make-if 'p
+                                             '((then) p)
+                                             '(els)))
+                              ))
                   (make-if pred
                            (sequence->exp actions)
                            (expand-clauses rest))))))))
@@ -325,17 +330,18 @@
                                       (make-lambda '() (list (car bodies))))
                                 ret)))))
          (ks (map car kvs)))
-    (list 'let kvs
-          (if (null? ks)
-              true
-              (let loop ((ret (list 'let (list (list 'v (list (car ks))))
-                                    (make-if 'v 'v false)))
-                         (ks (cdr ks)))
-                (if (null? ks)
-                    ret
-                    (loop (list 'let (list (list 'v (list (car ks))))
-                                (make-if 'v ret false))
-                          (cdr ks))))))))
+    (make-let kvs
+              (list
+               (if (null? ks)
+                   true
+                   (let loop ((ret (make-let (list (list 'v (list (car ks))))
+                                             (list (make-if 'v 'v false))))
+                              (ks (cdr ks)))
+                     (if (null? ks)
+                         ret
+                         (loop (make-let (list (list 'v (list (car ks))))
+                                         (list (make-if 'v ret false)))
+                               (cdr ks)))))))))
 
 
 (define (or? exp)
@@ -369,17 +375,19 @@
                                       (make-lambda '() (list (car bodies))))
                                 ret)))))
          (ks (map car kvs)))
-    (list 'let kvs
-          (if (null? ks)
-              false
-              (let loop ((ret (list 'let (list (list 'v (list (car ks))))
-                                    (make-if 'v 'v false)))
-                         (ks (cdr ks)))
-                (if (null? ks)
-                    ret
-                    (loop (list 'let (list (list 'v (list (car ks))))
-                                (make-if 'v 'v ret))
-                          (cdr ks))))))))
+    (make-let kvs
+              (list
+               (if (null? ks)
+                   false
+                   (let loop ((ret (make-let (list (list 'v (list (car ks))))
+                                             (list (make-if 'v 'v false))))
+                              (ks (cdr ks)))
+                     (if (null? ks)
+                         ret
+                         (loop (make-let (list (list 'v (list (car ks))))
+                                         (list (make-if 'v 'v ret)))
+                               (cdr ks)))))))))
+
 
 
 (define (my-eval-4-2-b exp env)
@@ -538,38 +546,46 @@
                       (3 c)))))
   (let ()
     (assert (equal? (expand-and-clauses '())
-                    (list 'let '() true)))
+                    (make-let '() (list true))))
     (assert (equal? (expand-and-clauses '((a) (b) (c)))
-                    (list 'let '((#{2}# (lambda () (c)))
-                                 (#{1}# (lambda () (b)))
-                                 (#{0}# (lambda () (a))))
-                          (list 'let '((v (#{0}#)))
-                                (list 'if 'v
-                                      (list 'let '((v (#{1}#)))
-                                            (list 'if 'v
-                                                  (list 'let '((v (#{2}#)))
-                                                        (list 'if 'v
-                                                              'v
-                                                              false))
-                                                  false))
-                                      false))))))
+                    (make-let '((#{2}# (lambda () (c)))
+                                (#{1}# (lambda () (b)))
+                                (#{0}# (lambda () (a))))
+                              (list
+                               (make-let '((v (#{0}#)))
+                                         (list
+                                          (make-if 'v
+                                                   (make-let '((v (#{1}#)))
+                                                             (list
+                                                              (make-if 'v
+                                                                       (make-let '((v (#{2}#)))
+                                                                                 (list
+                                                                                  (make-if 'v
+                                                                                           'v
+                                                                                           false)))
+                                                                       false)))
+                                                   false))))))))
   (let ()
     (assert (equal? (expand-or-clauses '())
-                    (list 'let '() false)))
+                    (make-let '() (list false))))
     (assert (equal? (expand-or-clauses '((a) (b) (c)))
-                    (list 'let '((#{2}# (lambda () (c)))
+                    (make-let '((#{2}# (lambda () (c)))
                                  (#{1}# (lambda () (b)))
                                  (#{0}# (lambda () (a))))
-                          (list 'let '((v (#{0}#)))
-                                (list 'if 'v
-                                      'v
-                                      (list 'let '((v (#{1}#)))
-                                            (list 'if 'v
-                                                  'v
-                                                  (list 'let '((v (#{2}#)))
-                                                        (list 'if 'v
-                                                              'v
-                                                              false))))))))))
+                              (list
+                               (make-let '((v (#{0}#)))
+                                         (list
+                                          (make-if 'v
+                                                   'v
+                                                   (make-let '((v (#{1}#)))
+                                                             (list
+                                                              (make-if 'v
+                                                                       'v
+                                                                       (make-let '((v (#{2}#)))
+                                                                                 (list
+                                                                                  (make-if 'v
+                                                                                           'v
+                                                                                           false))))))))))))))
   (let ()
     (assert (equal? (cond->if '(cond (a b c)
                                      ((d) => (e))
