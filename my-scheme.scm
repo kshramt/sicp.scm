@@ -239,6 +239,10 @@
 (define (cond-else-clause? clause)
   (eq? (cond-predicate clause) 'else))
 
+(define (cond-=>-actions? actions)
+  (and (pair? actions)
+       (eq? (car actions) '=>)))
+
 (define cond-predicate car)
 
 (define cond-actions cdr)
@@ -247,18 +251,33 @@
   (expand-clauses (cond-clauses exp)))
 
 (define (expand-clauses clauses)
+  "Q 4.5"
   (if (null? clauses)
-      'false
+      false
       (let ((first (car clauses))
             (rest (cdr clauses)))
         (if (cond-else-clause? first)
             (if (null? rest)
                 (sequence->exp (cond-actions first))
-                (error "ELSE clause is not last -- COND->IF"
+                (error "ELSE clause is not last -- EXPAND-CLAUSES"
                        clauses))
-            (make-if (cond-predicate first)
-                     (sequence->exp (cond-actions first))
-                     (expand-clauses rest))))))
+            (let ((actions (cond-actions first))
+                  (pred (cond-predicate first)))
+              (if (cond-=>-actions? actions)
+                  (let ((action (cdr actions)))
+                    (and (null? action) (error "=> clause does not contain an action -- EXPAND-CLAUSES"))
+                    (and (pair? (cdr action)) (error "=> clause contains multiple actions -- EXPAND-CLAUSES"))
+                    (list 'let (list (list 'then (make-lambda '()
+                                                              action))
+                                     (list 'els (make-lambda '()
+                                                              (list (expand-clauses rest))))
+                                     (list 'p pred))
+                              (make-if 'p
+                                       '((then) p)
+                                       '(els))))
+                  (make-if pred
+                           (sequence->exp actions)
+                           (expand-clauses rest))))))))
 
 
 (define (let? exp)
@@ -551,6 +570,18 @@
                                                         (list 'if 'v
                                                               'v
                                                               false))))))))))
+  (let ()
+    (assert (equal? (cond->if '(cond (a b c)
+                                     ((d) => (e))
+                                     (else f g)))
+                    '(if a
+                         (begin b c)
+                         (let ((then (lambda () (e)))
+                               (els (lambda () (begin f g)))
+                               (p (d)))
+                           (if p
+                               ((then) p)
+                               (els)))))))
   )
 
 (define (main)
