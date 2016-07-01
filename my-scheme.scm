@@ -74,10 +74,15 @@
 
 
 (define (apply-primitive-procedure proc args)
-  'todo)
+  (apply
+   (primitive-implementation proc)
+   args))
 
 (define (primitive-procedure? proc)
-  'todo)
+  (tagged-list? proc 'primitive))
+
+(define (primitive-implementation proc)
+  (cadr proc))
 
 (define (compound-procedure? proc)
   (tagged-list? proc 'procedure))
@@ -630,6 +635,7 @@
                         (frame-kvs frame))))
 
 
+(define first-frame car)
 (define frame-kvs cdr)
 
 
@@ -742,6 +748,35 @@
                           (cons 1 2)
                           (cons 5 6)))))
   )
+
+
+(define primitive-procedures
+  (list (cons 'car car)
+        (cons 'cdr cdr)
+        (cons 'null? null?)
+        ))
+
+(define (primitive-procedure-names)
+  (map car primitive-procedures))
+
+(define (primitive-procedure-objects)
+  (map (lambda (kv) (list 'primitive (cdr kv)))
+       primitive-procedures))
+
+
+(define (setup-environment)
+  (let ((initial-env
+         (extend-environment (primitive-procedure-names)
+                             (primitive-procedure-objects)
+                             the-empty-environment)))
+    (define-variable! 'true true initial-env)
+    (define-variable! 'false false initial-env)
+    initial-env))
+
+
+(define the-empty-environment '())
+(define the-global-environment (setup-environment))
+
 
 (define (main)
   #t
