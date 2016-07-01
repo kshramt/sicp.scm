@@ -601,51 +601,39 @@
 
 
 (define (define-variable! var val env)
-  (let ((frame (first-frame env)))
-    (define (scan vars vals)
-      (cond ((null? vars)
-             (add-binding-to-frame! var val frame))
-            ((eq? var (car vars))
-             (set-car! vals val))
-            (else
-             (scan (cdr vars)
-                   (cdr vals)))))
-    (scan (frame-variables frame)
-          (frame-values frame))))
+  "Q 4.11"
+  (let* ((frame (first-frame env))
+         (kv (assoc var (frame-kvs frame))))
+    (if kv
+        (set-cdr! kv val)
+        (add-binding-to-frame! var val frame))))
 
 
 (define (set-variable-value! var val env)
+  "Q 4.11"
   (define (env-loop env)
-    (define (scan vars vals)
-      (cond ((null? vars)
-             (env-loop (enclosing-environment env)))
-            ((eq? var (car vars))
-             (set-car! vals val))
-            (else
-             (scan (cdr vars) (cdr vals)))))
     (if (eq? env the-empty-environment)
         (error "Unbound variable -- SET!" var)
-        (let ((frame (first-frame env)))
-          (scan (frame-variables frame)
-                (frame-values frame)))))
+        (let* ((frame (first-frame env))
+               (kv (assoc var (frame-kvs frame))))
+          (if kv
+              (set-cdr! kv val)
+              (env-loop (enclosing-environment env))))))
   (env-loop env))
 
 
 (define (make-frame vars vals)
-  (cons vars vals))
-
-
-(define (frame-variables frame)
-  (car frame))
-
-
-(define (frame-values frame)
-  (cdr frame))
+  "Q 4.11"
+  (cons 'frame (map cons vars vals)))
 
 
 (define (add-binding-to-frame! var val frame)
-  (set-car! frame (cons var (frame-variables frame)))
-  (set-cdr! frame (cons val (frame-values frame))))
+  "Q 4.11"
+  (set-cdr! frame (cons (cons var val)
+                        (frame-kvs frame))))
+
+
+(define frame-kvs cdr)
 
 
 (define (test)
@@ -743,6 +731,19 @@
                     '(let () (define (f) a) (f))))
     (assert (equal? (let->combination '(let f ((x y)) p))
                     '(let () (define (f x) p) (f y)))))
+  (let ((frm (list 'frame (cons 1 2))))
+    (add-binding-to-frame! 3 4 frm)
+    (assert (equal? frm
+                    (list 'frame
+                          (cons 3 4)
+                          (cons 1 2)))))
+  (let ((frm (list 'frame (cons 1 2) (cons 5 6))))
+    (add-binding-to-frame! 3 4 frm)
+    (assert (equal? frm
+                    (list 'frame
+                          (cons 3 4)
+                          (cons 1 2)
+                          (cons 5 6)))))
   )
 
 (define (main)
