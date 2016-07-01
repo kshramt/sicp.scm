@@ -491,7 +491,7 @@
 
 (define (apply-generic f . args)
   (let* ((ts (map type-tag args))
-         (impl (get op ts)))
+         (impl (get f ts)))
     (if (pair? impl)
         (apply impl (map contents args))
         (error "No implementation of " f " for type " ts))))
