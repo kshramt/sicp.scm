@@ -576,20 +576,11 @@
 
 
 (define (lookup-variable-value var env)
-  (define (env-loop env)
-    (define (scan vars vals)
-      (cond ((null? vars)
-             (env-loop (enclosing-environment env)))
-            ((eq? var (car vars))
-             (car vals))
-            (else
-             (scan (cdr vars) (cdr vals)))))
-    (if (eq? env the-empty-environment)
-        (error "Unbound variable -- LOOKUP=VARIABLE=VALUE" var)
-        (let ((frame (first-frame env)))
-          (scan (frame-variables frame)
-                (frame-values frame)))))
-  (env-loop env))
+  "Q 4.12"
+  (loop-env
+   var env
+   (lambda (kv)
+     (cdr kv))))
 
 
 (define (extend-environment vars vals base-env)
@@ -610,16 +601,22 @@
 
 
 (define (set-variable-value! var val env)
-  "Q 4.11"
-  (define (env-loop env)
+  "Q 4.11 Q 4.12"
+  (loop-env
+   var env
+   (lambda (kv)
+     (set-cdr! kv val))))
+
+
+(define (loop-env var env found)
+  (let loop ((env env))
     (if (eq? env the-empty-environment)
-        (error "Unbound variable -- SET!" var)
+        (error "Unbound variable -- LOOP-ENV" var)
         (let* ((frame (first-frame env))
                (kv (assoc var (frame-kvs frame))))
           (if kv
-              (set-cdr! kv val)
-              (env-loop (enclosing-environment env))))))
-  (env-loop env))
+              (found kv)
+              (loop (enclosing-environment env)))))))
 
 
 (define (make-frame vars vals)
