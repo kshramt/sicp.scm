@@ -613,6 +613,21 @@
      (set-cdr! kv val))))
 
 
+(define (unbind-variable! var env)
+  "Q 4.13"
+  (let loop ((env env))
+    (unless (eq? env the-empty-environment)
+      (let* ((frame (first-frame env)))
+        (let scan ((prev frame)
+                   (curr (cdr frame)))
+          (if (null? curr)
+              (loop (enclosing-environment env))
+              (if (eq? var (caar curr))
+                  (set-cdr! prev (cdr curr))
+                  (scan curr
+                        (cdr curr)))))))))
+
+
 (define (loop-env var env found)
   (let loop ((env env))
     (if (eq? env the-empty-environment)
@@ -622,6 +637,9 @@
           (if kv
               (found kv)
               (loop (enclosing-environment env)))))))
+
+
+(define enclosing-environment cdr)
 
 
 (define (make-frame vars vals)
@@ -775,9 +793,48 @@
                           (cons 3 4)
                           (cons 1 2)
                           (cons 5 6)))))
+  (let ((env (extend-environment '(a b c)
+                                 '(1 2 3)
+                                 the-empty-environment)))
+    (unbind-variable! 'a env)
+    (assert (equal? env
+                    (list
+                     (list 'frame
+                           (cons 'b 2)
+                           (cons 'c 3)))))
+    )
+  (let ((env (extend-environment '(a b c)
+                                 '(1 2 3)
+                                 the-empty-environment)))
+    (unbind-variable! 'b env)
+    (assert (equal? env
+                    (list
+                     (list 'frame
+                           (cons 'a 1)
+                           (cons 'c 3)))))
+    )
+  (let ((env (extend-environment '(a b c)
+                                 '(1 2 3)
+                                 the-empty-environment)))
+    (unbind-variable! 'c env)
+    (assert (equal? env
+                    (list
+                     (list 'frame
+                           (cons 'a 1)
+                           (cons 'b 2)))))
+    )
+  (let ((env (extend-environment '(a b c)
+                                 '(1 2 3)
+                                 the-empty-environment)))
+    (unbind-variable! 'd env)
+    (assert (equal? env
+                    (list
+                     (list 'frame
+                           (cons 'a 1)
+                           (cons 'b 2)
+                           (cons 'c 3)))))
+    )
   )
-
-
 
 
 (define (main)
