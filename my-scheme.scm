@@ -639,6 +639,34 @@
 (define frame-kvs cdr)
 
 
+(define primitive-procedures
+  (list (cons 'car car)
+        (cons 'cdr cdr)
+        (cons 'null? null?)
+        ))
+
+(define (primitive-procedure-names)
+  (map car primitive-procedures))
+
+(define (primitive-procedure-objects)
+  (map (lambda (kv) (list 'primitive (cdr kv)))
+       primitive-procedures))
+
+
+(define (setup-environment)
+  (let ((initial-env
+         (extend-environment (primitive-procedure-names)
+                             (primitive-procedure-objects)
+                             the-empty-environment)))
+    (define-variable! 'true true initial-env)
+    (define-variable! 'false false initial-env)
+    initial-env))
+
+
+(define the-empty-environment '())
+(define the-global-environment (setup-environment))
+
+
 (define (test)
   (let ((tbl (make-table)))
     (insert! 'a 1 tbl)
@@ -750,32 +778,6 @@
   )
 
 
-(define primitive-procedures
-  (list (cons 'car car)
-        (cons 'cdr cdr)
-        (cons 'null? null?)
-        ))
-
-(define (primitive-procedure-names)
-  (map car primitive-procedures))
-
-(define (primitive-procedure-objects)
-  (map (lambda (kv) (list 'primitive (cdr kv)))
-       primitive-procedures))
-
-
-(define (setup-environment)
-  (let ((initial-env
-         (extend-environment (primitive-procedure-names)
-                             (primitive-procedure-objects)
-                             the-empty-environment)))
-    (define-variable! 'true true initial-env)
-    (define-variable! 'false false initial-env)
-    initial-env))
-
-
-(define the-empty-environment '())
-(define the-global-environment (setup-environment))
 
 
 (define (main)
