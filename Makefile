@@ -14,9 +14,12 @@ all:
 
 
 .PHONY: check
-check: my-scheme.scm.tested
+check: my-scheme-lib-test.scm.tested
 
 
-%.scm.tested: %.scm
+my-scheme-lib-test.scm.tested: my-scheme-lib.scm
+
+
+%-test.scm.tested: %-test.scm
 	GUILE_LOAD_PATH="$(CURDIR)":"$${GUILE_LOAD_PATH:-}" guile $<
 	touch $@
