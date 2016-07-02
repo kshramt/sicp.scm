@@ -660,6 +660,7 @@
 (define primitive-procedures
   (list (cons 'car car)
         (cons 'cdr cdr)
+        (cons 'cons cons)
         (cons 'null? null?)
         ))
 
@@ -682,7 +683,45 @@
 
 
 (define the-empty-environment '())
+
+
+(define input-prompt ";; M-eval input")
+(define output-prompt ";; M-eval value")
+
+
+(define (driver-loop)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+    (let ((output (my-eval input the-global-environment)))
+      (announce-output output-prompt)
+      (user-print output)))
+  (driver-loop))
+
+
+(define (prompt-for-input s)
+  (newline)
+  (newline)
+  (display s)
+  (newline))
+
+
+(define (announce-output s)
+  (newline)
+  (display s)
+  (newline))
+
+
+(define (user-print obj)
+  (display
+   (if (compound-procedure? obj)
+       (list 'compound-procedure
+             (procedure-parameters obj)
+             (procedure-body obj))
+       obj)))
+
+
 (define the-global-environment (setup-environment))
+(driver-loop)
 
 
 (define (test)
