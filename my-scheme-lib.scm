@@ -658,11 +658,16 @@
 
 
 (define primitive-procedures
-  (list (cons 'car car)
-        (cons 'cdr cdr)
-        (cons 'cons cons)
-        (cons 'null? null?)
-        ))
+  (list
+   (cons '+ +)
+   (cons '- -)
+   (cons '* *)
+   (cons '/ /)
+   (cons 'car car)
+   (cons 'cdr cdr)
+   (cons 'cons cons)
+   (cons 'null? null?)
+   ))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
