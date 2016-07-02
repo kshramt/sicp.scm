@@ -1,4 +1,4 @@
-(define-module (my-scheme))
+(define-module (my-scheme-lib))
 
 
 (define-syntax assert
@@ -39,7 +39,7 @@
 
 (define (my-eval exp env)
   (cond ((self-evaluating? exp) exp)
-        ((variable? exp) (lookup-variable-value exp env))
+        ((var? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
         ((assignment? exp) (eval-assignment exp env))
         ((definition? exp) (eval-definition exp env))
@@ -161,7 +161,7 @@
         (else false)))
 
 
-(define variable? symbol?)
+(define var? symbol?)
 
 
 (define (quoted? exp)
@@ -667,6 +667,7 @@
    (cons 'cdr cdr)
    (cons 'cons cons)
    (cons 'null? null?)
+   (cons 'pair? pair?)
    ))
 
 (define (primitive-procedure-names)
@@ -679,9 +680,10 @@
 
 (define (setup-environment)
   (let ((initial-env
-         (extend-environment (primitive-procedure-names)
-                             (primitive-procedure-objects)
-                             the-empty-environment)))
+         (extend-environment
+          (primitive-procedure-names)
+          (primitive-procedure-objects)
+          the-empty-environment)))
     (define-variable! 'true true initial-env)
     (define-variable! 'false false initial-env)
     initial-env))
