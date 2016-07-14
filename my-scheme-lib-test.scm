@@ -1,7 +1,32 @@
 (include "my-scheme-lib.scm")
 
 
+(define-syntax test-equal?
+  (syntax-rules ()
+    ((_ e1 e2)
+     (let ((v1 e1)
+           (v2 e2))
+       (unless (equal? v1 v2)
+         (error "TEST-EQUAL? FAILURE: "
+                'e1
+                'e2
+                v1
+                v2
+                ))))))
+
+
 (define (main)
+  (let ()
+    (test-equal?
+     (scan-out-defines
+      '((define u (e1))
+        (define (v) (e2))
+        (e3)))
+     '(let ((u *unassigned*)
+            (v *unassigned*))
+        (set! u (e1))
+        (set! v (lambda () (e2)))
+        (e3))))
   (let ((tbl (make-table)))
     (insert! 'a 1 tbl)
     (insert! 'b 2 tbl)

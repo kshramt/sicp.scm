@@ -89,13 +89,60 @@
 
 
 (define (make-procedure parameters body env)
-  (list 'procedure parameters body env))
+  (list 'procedure
+        parameters
+        ; Q 4.16 make-procedure is called only once
+        ; procedure-body is called many times
+        (scan-out-defines body)
+        env))
+
+
+(define (scan-out-defines body)
+  "Q 4.16 b"
+  (let* ((defs-others (filter2 definition? body))
+         (defs (car defs-others))
+         (vars (map definition-variable defs))
+         (vals (map definition-value defs))
+         (others (cdr defs-others)))
+    (make-let
+     (map (lambda (var)
+            (list var *unassigned*))
+          vars)
+     (append (map (lambda (var val)
+                    (list 'set! var val))
+                  vars
+                  vals)
+             others))))
+
+
+(define (filter2 pred xs)
+  (let ((ts-fs (rev-filter2 pred xs)))
+    (cons (reverse (car ts-fs))
+          (reverse (cdr ts-fs)))))
+
+
+(define (rev-filter2 pred xs)
+  (let loop ((xs xs)
+             (ts '())
+             (fs '()))
+    (if (null? xs)
+        (cons ts fs)
+        (let ((x (car xs)))
+          (if (pred x)
+              (loop (cdr xs)
+                    (cons x ts)
+                    fs)
+              (loop (cdr xs)
+                    ts
+                    (cons x fs)))))))
 
 
 (define procedure-parameters cadr)
 (define procedure-body caddr)
 (define procedure-environment cadddr)
 
+
+(define *unassigned* '*unassigned*)
 
 (define true #t)
 
@@ -585,7 +632,11 @@
   (loop-env
    var env
    (lambda (kv)
-     (cdr kv))))
+     (let ((v (cdr kv)))
+       ; Q 4.16
+       (if (eq? v *unassigned*)
+           (error "Access to unassigned variable: " (car kv))
+           v)))))
 
 
 (define (extend-environment vars vals base-env)
@@ -684,6 +735,7 @@
           (primitive-procedure-names)
           (primitive-procedure-objects)
           the-empty-environment)))
+    (define-variable! '*unassigned* *unassigned* initial-env)
     (define-variable! 'true true initial-env)
     (define-variable! 'false false initial-env)
     initial-env))
