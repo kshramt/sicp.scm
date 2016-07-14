@@ -97,7 +97,7 @@
         env))
 
 
-(define (scan-out-defines body)
+(define (scan-out-defines-4-16 body)
   "Q 4.16 b"
   (let* ((defs-others (filter2 definition? body))
          (defs (car defs-others))
@@ -113,6 +113,24 @@
                   vars
                   vals)
              others))))
+
+
+(define (scan-out-defines body)
+  "Q 4.17"
+  (let* ((defs-others (filter2 definition? body))
+         (defs (car defs-others))
+         (vars (map definition-variable defs))
+         (vals (map definition-value defs))
+         (others (cdr defs-others)))
+    (append
+     (map (lambda (var)
+            (list 'define var *unassigned*))
+          vars)
+     (map (lambda (var val)
+            (list 'set! var val))
+          vars
+          vals)
+     others)))
 
 
 (define (filter2 pred xs)

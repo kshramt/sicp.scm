@@ -20,6 +20,17 @@
     (test-equal?
      (scan-out-defines
       '((define u (e1))
+        (e3)
+        (define (v) (e2))))
+     '((define u *unassigned*)
+       (define v *unassigned*)
+       (set! u (e1))
+       (set! v (lambda () (e2)))
+       (e3))))
+  (let ()
+    (test-equal?
+     (scan-out-defines-4-16
+      '((define u (e1))
         (define (v) (e2))
         (e3)))
      '(let ((u *unassigned*)
