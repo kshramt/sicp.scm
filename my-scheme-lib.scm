@@ -52,6 +52,7 @@
         ((begin? exp) (eval-sequence (begin-actions exp) env))
         ((cond? exp) (my-eval (cond->if exp) env))
         ((let? exp) (my-eval (let->combination exp) env))
+        ((letrec? exp) (my-eval (letrec->let exp) env))
         ((let*? exp) (my-eval (let*->nested-lets exp) env))
         ((application? exp) (my-apply (my-eval (operator exp) env)
                                       (list-of-values (operands exp) env)))
@@ -382,6 +383,9 @@
 (define (let? exp)
   (tagged-list? exp 'let))
 
+(define (letrec? exp)
+  (tagged-list? exp 'letrec))
+
 (define let-kvs cadr)
 
 (define let-body cddr)
@@ -402,6 +406,22 @@
             (body (let-body exp)))
         (cons (make-lambda (map car kvs) body)
               (map cadr kvs)))))
+
+
+(define (letrec->let exp)
+  "Q 4.20"
+  (let ((exp (cdr exp)))
+    (if (null? exp)
+        (error "No decl nor body provided -- letrec: " exp)
+        (let ((kvs (car exp))
+              (body (cdr exp)))
+          (make-let (map (lambda (kv)
+                           (list (car kv) *unassigned*))
+                         kvs)
+                    (append (map (lambda (kv)
+                                   (list 'set! (car kv) (cadr kv)))
+                                 kvs)
+                            body))))))
 
 
 (define (and? exp)

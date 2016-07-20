@@ -9,8 +9,9 @@ export SHELLOPTS := pipefail:errexit:nounset:noclobber
 
 # Tasks
 .PHONY: all
-.DEFAULT_TARGET: all
 all:
+
+.DEFAULT_GOAL := all
 
 
 .PHONY: check

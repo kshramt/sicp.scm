@@ -18,6 +18,16 @@
 (define (main)
   (let ()
     (test-equal?
+     (letrec->let '(letrec ((a 1)
+                            (b 2))
+                     c))
+     '(let ((a *unassigned*)
+            (b *unassigned*))
+        (set! a 1)
+        (set! b 2)
+        c)))
+  (let ()
+    (test-equal?
      (scan-out-defines
       '((define u (e1))
         (e3)
