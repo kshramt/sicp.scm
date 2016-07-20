@@ -18,11 +18,57 @@
 (define (main)
   (let ()
     (test-equal?
+     (my-eval
+      '(begin
+         (define (f x)
+           (define (even? n)
+             (if (= n 0)
+                 true
+                 (odd? (- n 1))))
+           (define (odd? n)
+             (if (= n 0)
+                 false
+                 (even? (- n 1))))
+           (even? x))
+         (f 3))
+      (setup-environment))
+     false)
+    (test-equal?
+     (my-eval
+      '(begin
+         (define (f x)
+           (define (even? n)
+             (if (= n 0)
+                 true
+                 (odd? (- n 1))))
+           (define (odd? n)
+             (if (= n 0)
+                 false
+                 (even? (- n 1))))
+           (even? x))
+         (f 4))
+      (setup-environment))
+     true))
+  (let ()
+    (test-equal?
+     (my-eval
+      '((lambda (n)
+          ((lambda (fact)
+             (fact fact n))
+           (lambda (ft k)
+             (if (= k 1)
+                 1
+                 (* k (ft ft (- k 1)))))))
+        10)
+      (setup-environment))
+     3628800))
+  (let ()
+    (test-equal?
      (letrec->let '(letrec ((a 1)
                             (b 2))
                      c))
-     '(let ((a *unassigned*)
-            (b *unassigned*))
+     '(let ((a '*unassigned*)
+            (b '*unassigned*))
         (set! a 1)
         (set! b 2)
         c)))
@@ -32,8 +78,8 @@
       '((define u (e1))
         (e3)
         (define (v) (e2))))
-     '((define u *unassigned*)
-       (define v *unassigned*)
+     '((define u '*unassigned*)
+       (define v '*unassigned*)
        (set! u (e1))
        (set! v (lambda () (e2)))
        (e3))))
@@ -43,8 +89,8 @@
       '((define u (e1))
         (define (v) (e2))
         (e3)))
-     '(let ((u *unassigned*)
-            (v *unassigned*))
+     '(let ((u '*unassigned*)
+            (v '*unassigned*))
         (set! u (e1))
         (set! v (lambda () (e2)))
         (e3))))

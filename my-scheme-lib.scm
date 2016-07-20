@@ -107,7 +107,7 @@
          (others (cdr defs-others)))
     (make-let
      (map (lambda (var)
-            (list var *unassigned*))
+            (list var (quote '*unassigned*)))
           vars)
      (append (map (lambda (var val)
                     (list 'set! var val))
@@ -125,7 +125,7 @@
          (others (cdr defs-others)))
     (append
      (map (lambda (var)
-            (list 'define var *unassigned*))
+            (list 'define var (quote '*unassigned*)))
           vars)
      (map (lambda (var val)
             (list 'set! var val))
@@ -160,8 +160,6 @@
 (define procedure-body caddr)
 (define procedure-environment cadddr)
 
-
-(define *unassigned* '*unassigned*)
 
 (define true #t)
 
@@ -416,7 +414,7 @@
         (let ((kvs (car exp))
               (body (cdr exp)))
           (make-let (map (lambda (kv)
-                           (list (car kv) *unassigned*))
+                           (list (car kv) (quote '*unassigned*)))
                          kvs)
                     (append (map (lambda (kv)
                                    (list 'set! (car kv) (cadr kv)))
@@ -672,7 +670,7 @@
    (lambda (kv)
      (let ((v (cdr kv)))
        ; Q 4.16
-       (if (eq? v *unassigned*)
+       (if (eq? v '*unassigned*)
            (error "Access to unassigned variable: " (car kv))
            v)))))
 
@@ -748,6 +746,7 @@
 
 (define primitive-procedures
   (list
+   (cons '= =)
    (cons '+ +)
    (cons '- -)
    (cons '* *)
@@ -773,7 +772,6 @@
           (primitive-procedure-names)
           (primitive-procedure-objects)
           the-empty-environment)))
-    (define-variable! '*unassigned* *unassigned* initial-env)
     (define-variable! 'true true initial-env)
     (define-variable! 'false false initial-env)
     initial-env))
