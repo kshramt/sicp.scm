@@ -21,6 +21,21 @@
      (my-eval
       '(begin
          (define (f x)
+           ((lambda (even? odd?)
+              (even? even? odd? x))
+            (lambda (ev? od? n)
+              (if (= n 0) true (od? ev? od? (- n 1))))
+            (lambda (ev? od? n)
+               (if (= n 0) false (ev? ev? od? (- n 1))))))
+         (cons (f 2)
+               (f 3)))
+      (setup-environment))
+     (cons true false)))
+  (let ()
+    (test-equal?
+     (my-eval
+      '(begin
+         (define (f x)
            (define (even? n)
              (if (= n 0)
                  true
