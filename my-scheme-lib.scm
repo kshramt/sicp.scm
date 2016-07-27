@@ -37,24 +37,24 @@
   (string->symbol (string-append "sym" (number->string n))))
 
 
-(define (my-eval exp env)
+(define (my-eval-orig exp env)
   (cond ((self-evaluating? exp) exp)
         ((var? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
         ((assignment? exp) (eval-assignment exp env))
         ((definition? exp) (eval-definition exp env))
         ((if? exp) (eval-if exp env))
-        ((and? exp) (my-eval (expand-and-clauses (and-clauses exp)) env))
-        ((or? exp) (my-eval (expand-or-clauses (or-clauses exp)) env))
+        ((and? exp) (my-eval-orig (expand-and-clauses (and-clauses exp)) env))
+        ((or? exp) (my-eval-orig (expand-or-clauses (or-clauses exp)) env))
         ((lambda? exp) (make-procedure (lambda-parameters exp)
                                        (lambda-body exp)
                                        env))
         ((begin? exp) (eval-sequence (begin-actions exp) env))
-        ((cond? exp) (my-eval (cond->if exp) env))
-        ((let? exp) (my-eval (let->combination exp) env))
-        ((letrec? exp) (my-eval (letrec->let exp) env))
-        ((let*? exp) (my-eval (let*->nested-lets exp) env))
-        ((application? exp) (my-apply (my-eval (operator exp) env)
+        ((cond? exp) (my-eval-orig (cond->if exp) env))
+        ((let? exp) (my-eval-orig (let->combination exp) env))
+        ((letrec? exp) (my-eval-orig (letrec->let exp) env))
+        ((let*? exp) (my-eval-orig (let*->nested-lets exp) env))
+        ((application? exp) (my-apply (my-eval-orig (operator exp) env)
                                       (list-of-values (operands exp) env)))
         (else (error "Unknown expression type -- EVAL" exp))))
 
@@ -286,13 +286,13 @@
 (define (list-of-values exps env)
   (if (no-operands? exps)
       '()
-      (cons (my-eval (first-operand exps) env)
+      (cons (my-eval-orig (first-operand exps) env)
             (list-of-values (rest-operands exps) env))))
 "Q 4.1 ->"
 (define (list-of-values-q-4-1-> exps env)
   (if (no-operands? exps)
       '()
-      (let ((a (my-eval (first-operand exps) env)))
+      (let ((a (my-eval-orig (first-operand exps) env)))
         (cons a
               (list-of-values (rest-operands exps) env)))))
 "Q 4.1 <-"
@@ -300,32 +300,32 @@
   (if (no-operands? exps)
       '()
       (let ((d (list-of-values (rest-operands exps) env)))
-        (cons (my-eval (first-operand exps) env)
+        (cons (my-eval-orig (first-operand exps) env)
               d))))
 
 
 (define (eval-if exp env)
-  (if (true? (my-eval (if-predicate exp) env))
-      (my-eval (if-consequent exp) env)
-      (my-eval (if-alternative exp) env)))
+  (if (true? (my-eval-orig (if-predicate exp) env))
+      (my-eval-orig (if-consequent exp) env)
+      (my-eval-orig (if-alternative exp) env)))
 
 
 (define (eval-sequence exps env)
-  (cond ((last-exp? exps) (my-eval (first-exp exps) env))
-        (else (my-eval (first-exp exps) env)
+  (cond ((last-exp? exps) (my-eval-orig (first-exp exps) env))
+        (else (my-eval-orig (first-exp exps) env)
               (eval-sequence (rest-exps exps) env))))
 
 
 (define (eval-assignment exp env)
   (set-variable-value! (assignment-variable exp)
-                       (my-eval (assignment-value exp) env)
+                       (my-eval-orig (assignment-value exp) env)
                        env)
   'ok)
 
 
 (define (eval-definition exp env)
   (define-variable! (definition-variable exp)
-                    (my-eval (definition-value exp) env)
+                    (my-eval-orig (definition-value exp) env)
                     env)
   'ok)
 
@@ -544,7 +544,7 @@
              (ret true))
     (if (null? s)
         ret
-        (let ((ret (my-eval (car s) env)))
+        (let ((ret (my-eval-orig (car s) env)))
           (if (true? ret)
               (loop (cdr s) ret)
               false)))))
@@ -589,7 +589,7 @@
   (let loop ((s (or-clauses exp)))
     (if (null? s)
         false
-        (let ((ret (my-eval (car s) env)))
+        (let ((ret (my-eval-orig (car s) env)))
           (if (true? ret)
               ret
               (loop (cdr s)))))))
