@@ -745,7 +745,7 @@
       env)
     'ok)
   (define (eval-sequence exps env)
-    (cond ((last-exp? exps) (my-eval (first-exp exps) env))
+    (cond ((last-exp? exps) (my-eval-4-3 (first-exp exps) env))
           (else (my-eval-4-3 (first-exp exps) env)
                 (eval-sequence (rest-exps exps) env))))
   (define (text-of-quotation exp env)
