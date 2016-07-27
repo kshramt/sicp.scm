@@ -123,8 +123,9 @@
 
 (define (analyze-lambda exp)
   (let ((vars (lambda-parameters exp))
-        (bproc (analyze-sequence (lambda-body exp))))
-    (lambda (env) (make-procedure vars bproc env))))
+        (bproc (analyze-sequence
+                (scan-out-defines (lambda-body exp)))))
+    (lambda (env) (make-procedure-2 vars bproc env))))
 
 
 (define (analyze-sequence exps)
@@ -201,6 +202,12 @@
         (scan-out-defines body)
         env))
 
+
+(define (make-procedure-2 parameters bproc env)
+  (list 'procedure
+        parameters
+        bproc
+        env))
 
 (define (scan-out-defines-4-16 body)
   "Q 4.16 b"
