@@ -59,7 +59,7 @@
         (else (error "Unknown expression type -- EVAL" exp))))
 
 
-(define (my-eval-2 exp env)
+(define (my-eval-analyze exp env)
   ((analyze exp) env))
 
 
@@ -125,7 +125,7 @@
   (let ((vars (lambda-parameters exp))
         (bproc (analyze-sequence
                 (scan-out-defines (lambda-body exp)))))
-    (lambda (env) (make-procedure-2 vars bproc env))))
+    (lambda (env) (make-procedure-analyze vars bproc env))))
 
 
 (define (analyze-sequence exps)
@@ -203,7 +203,7 @@
         env))
 
 
-(define (make-procedure-2 parameters bproc env)
+(define (make-procedure-analyze parameters bproc env)
   (list 'procedure
         parameters
         bproc
@@ -899,13 +899,13 @@
 (define output-prompt ";; M-eval value")
 
 
+(define my-eval my-eval-analyze)
+
+
 (define (driver-loop)
   (prompt-for-input input-prompt)
   (let ((input (read)))
-    ;; (let ((output (my-eval input the-global-environment)))
-    ;;   (announce-output output-prompt)
-    ;;   (user-print output))
-    (let ((output (my-eval-2 input the-global-environment)))
+    (let ((output (my-eval input the-global-environment)))
       (announce-output output-prompt)
       (user-print output)))
   (driver-loop))
