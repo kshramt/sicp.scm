@@ -858,6 +858,10 @@
 (define primitive-procedures
   (list
    (cons '= =)
+   (cons '< <)
+   (cons '> >)
+   (cons '<= <=)
+   (cons '>= >=)
    (cons '+ +)
    (cons '- -)
    (cons '* *)
@@ -898,7 +902,10 @@
 (define (driver-loop)
   (prompt-for-input input-prompt)
   (let ((input (read)))
-    (let ((output (my-eval input the-global-environment)))
+    ;; (let ((output (my-eval input the-global-environment)))
+    ;;   (announce-output output-prompt)
+    ;;   (user-print output))
+    (let ((output (my-eval-2 input the-global-environment)))
       (announce-output output-prompt)
       (user-print output)))
   (driver-loop))
