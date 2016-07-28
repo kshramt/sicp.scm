@@ -164,6 +164,50 @@
          (error "Unknown procedure type -- EXECUTE-APPLICATION" proc))))
 
 
+(define (my-eval-lazy exp env)
+  (cond ((self-evaluating? exp) exp)
+        ((var? exp) (lookup-variable-value exp env))
+        ((quoted? exp) (text-of-quotation exp))
+        ((assignment? exp) (eval-assignment exp env))
+        ((definition? exp) (eval-definition exp env))
+        ((if? exp) (eval-if exp env))
+        ((and? exp) (my-eval-lazy (expand-and-clauses (and-clauses exp)) env))
+        ((or? exp) (my-eval-lazy (expand-or-clauses (or-clauses exp)) env))
+        ((lambda? exp) (make-procedure (lambda-parameters exp)
+                                       (lambda-body exp)
+                                       env))
+        ((begin? exp) (eval-sequence (begin-actions exp) env))
+        ((cond? exp) (my-eval-lazy (cond->if exp) env))
+        ((let? exp) (my-eval-lazy (let->combination exp) env))
+        ((letrec? exp) (my-eval-lazy (letrec->let exp) env))
+        ((let*? exp) (my-eval-lazy (let*->nested-lets exp) env))
+        ((application? exp) (my-apply (actual-value (operator exp) env)
+                                      (operands exp)
+                                      env))
+        (else (error "Unknown expression type -- EVAL" exp))))
+
+
+(define (actual-value exp env)
+  (force-it (my-eval-lazy exp env)))
+
+
+(define (my-apply-lazy procedure arguments env)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure
+          procedure
+          (list-of-values arguments env)))
+        ((compound-procedure? procedure)
+         (eval-sequence-lazy
+          (procedure-body procedure)
+          (extend-environment
+           (procedure-parameters procedure)
+           (list-of-delayed-args arguments env)
+           (procedure-environment procedure))))
+        (else
+         (error
+          ("Unknown procedure type -- APPLY" procedure)))))
+
+
 (define (my-apply procedure arguments)
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
@@ -313,6 +357,12 @@
 (define (eval-sequence exps env)
   (cond ((last-exp? exps) (my-eval-orig (first-exp exps) env))
         (else (my-eval-orig (first-exp exps) env)
+              (eval-sequence (rest-exps exps) env))))
+
+
+(define (eval-sequence-lazy exps env)
+  (cond ((last-exp? exps) (my-eval-lazy (first-exp exps) env))
+        (else (my-eval-lazy (first-exp exps) env)
               (eval-sequence (rest-exps exps) env))))
 
 
@@ -853,6 +903,13 @@
 
 (define first-frame car)
 (define frame-kvs cdr)
+
+
+(define (fib n)
+  (if (< n 2)
+      1
+      (+ (fib (- n 1))
+         (fib(- n 2)))))
 
 
 (define primitive-procedures
